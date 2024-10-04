@@ -1,5 +1,6 @@
 import pandas as pd
 import requests
+import os
 
 
 def nomes_moedas():
@@ -36,7 +37,22 @@ def cotar_moeda(moeda):
 
 
 def ler_arquivo_investimentos():
-    arquivo = pd.read_excel('utilidades/compra_cripto.xlsx')
+    caminho_arquivo = 'utilidades/compra_cripto.xlsx'
+    
+    if not os.path.exists(caminho_arquivo):
+        df_padrao = pd.DataFrame({
+            'moeda': [],
+            'transacao': [],
+            'data_transacao': [],
+            'cotacao_na_data': [],
+            'valor_comprado': [],
+            'total_comprado': []
+        })
+        
+        df_padrao.to_excel(caminho_arquivo, index=False)
+        print(f'Arquivo \"{caminho_arquivo}\" criado com colunas padrão.')
+    
+    arquivo = pd.read_excel(caminho_arquivo)
     arquivo['data_transacao'] = pd.to_datetime(arquivo['data_transacao'], errors='coerce')
     
     return arquivo
@@ -48,7 +64,15 @@ def listar_investimentos():
     
     for i, row in arquivo.iterrows():
         data_formatada = row['data_transacao'].strftime('%d/%m/%Y') if pd.notnull(row['data_transacao']) else 'N/A'
-        tabela.append(f"{row['moeda']:^5} | {row['transacao']:^11} | {data_formatada:^15} | R${row['cotacao_na_data']:^16} | R${row['comprado']:^10.2f} | {row['total_comprado']:^14.10f}")
+        tabela.append(f"{row['moeda']:^5} | {row['transacao']:^9} | {data_formatada:^17} | R${row['cotacao_na_data']:^16} | R${row['comprado']:^10.2f} | {row['total_comprado']:^14.10f}")
         
     return tabela
         
+
+def somar_investimentos():
+    arquivo = ler_arquivo_investimentos()
+    soma = 0
+    for i, row in arquivo.iterrows():
+        soma+= float(row['comprado'])
+        
+    return soma
