@@ -27,13 +27,13 @@ def cotar_moeda(moeda):
         url = f"https://api.binance.com/api/v3/ticker/price?symbol={moeda}BRL"
 
         response = requests.get(url)
-        preco_btc = response.json()
+        preco = response.json()
         
-        return preco_btc['price']
+        return preco['price']
     else:
-        preco_btc = 0
+        preco = 0
 
-        return preco_btc
+        return preco
 
 
 def ler_arquivo_investimentos():
@@ -59,12 +59,14 @@ def ler_arquivo_investimentos():
 
 
 def listar_investimentos():
-    tabela = [f"{'Moeda':^5} | {'Transação':^9} | {'Data da Transacao':^15} | {'Cotação na Data':^18} | {'Comprado':^12} | {'Total Comprado':^14}"]
+    tabela = [f"{'Moeda':^5} | {'Transação':^9} | {'Data da Transacao':^15} | {'Cotação na Data':^18} | {'Comprado':^12} | {'Total Comprado':^14} | {'Cotação Atual':^15}"]
     arquivo = ler_arquivo_investimentos()
     
     for i, row in arquivo.iterrows():
+        cotacacao = float(cotar_moeda(row['moeda']))
         data_formatada = row['data_transacao'].strftime('%d/%m/%Y') if pd.notnull(row['data_transacao']) else 'N/A'
-        tabela.append(f"{row['moeda']:^5} | {row['transacao']:^9} | {data_formatada:^17} | R${row['cotacao_na_data']:^16} | R${row['comprado']:^10.2f} | {row['total_comprado']:^14.10f}")
+        
+        tabela.append(f"{row['moeda']:^5} | {row['transacao']:^9} | {data_formatada:^17} | R${row['cotacao_na_data']:^16} | R${row['comprado']:^10.2f} | {row['total_comprado']:^14.10f} | {cotacacao:^15.10f}")
         
     return tabela
         

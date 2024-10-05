@@ -44,16 +44,12 @@ valor_moeda = tk.CTkLabel(janela, font=('', 16), text='R$ 0,00')
 label_compra = tk.CTkLabel(janela, font=('', 18), text='Compra de Moeda')
 campo_compra = tk.CTkEntry(janela, width=170, placeholder_text='Digite o Valor comprado')
 botao_comprar = tk.CTkButton(janela, height=50, border_width=3, hover=True, font=('', 16), text='Comprar')
-
 janela_dados_investimentos = tk.CTkTextbox(janela, wrap='none', font=('Courier New', 13), width=730, height=200)
-atualizar_tabela()
-
 frame_total_investido = tk.CTkFrame(janela)
 label_total_investido = tk.CTkLabel(frame_total_investido)
-
 frame_lucro_prejuizo = tk.CTkFrame(janela)
 label_lucro_prejuizo = tk.CTkLabel(frame_lucro_prejuizo, text='Lucro/Prejuízo Total')
-exibir_soma_investimentos()
+
 
 # Posicionar na janela
 titulo.grid(row=0, column=0, padx=20, pady=20, sticky="ew", columnspan=2)
@@ -65,13 +61,15 @@ label_compra.grid(column=0, row=4, pady=(20, 10), padx=20, sticky='w')
 campo_compra.grid(column=0, row=5, pady=(0, 10), padx=20, sticky='w')
 botao_comprar.grid(column=1, row=4, pady=(0, 10), padx=20, sticky='sew', rowspan=2)
 janela_dados_investimentos.grid(column=0, row=6, pady=20, padx=10, columnspan=2)
-
-
 frame_total_investido.grid(column=0, row=7, pady=(0,20), padx=20, columnspan=2, sticky='w')
 label_total_investido.pack(pady=10, padx=40)
 frame_lucro_prejuizo.grid(column=1, row=7, pady=(0,20), padx=20)
 label_lucro_prejuizo.pack(pady=10, padx=40)
 
+
+
+atualizar_tabela()
+exibir_soma_investimentos()
 
 
 janela.mainloop()
