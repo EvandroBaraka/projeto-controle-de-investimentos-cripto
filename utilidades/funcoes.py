@@ -30,6 +30,7 @@ def cotar_moeda(moeda):
         preco = response.json()
         
         return preco['price']
+        #print(preco['price'])
     else:
         preco = 0
 
@@ -66,7 +67,7 @@ def listar_investimentos():
         cotacacao = float(cotar_moeda(row['moeda']))
         data_formatada = row['data_transacao'].strftime('%d/%m/%Y') if pd.notnull(row['data_transacao']) else 'N/A'
         
-        tabela.append(f"{row['moeda']:^5} | {row['transacao']:^9} | {data_formatada:^17} | R${row['cotacao_na_data']:^16} | R${row['comprado']:^10.2f} | {row['total_comprado']:^14.10f} | {cotacacao:^15.10f}")
+        tabela.append(f"{row['moeda']:^5} | {row['transacao']:^9} | {data_formatada:^17} | R${row['cotacao_na_data']:^16} | R${row['comprado']:^10.2f} | {row['total_comprado']:^14.10f} | R${cotacacao:^15}")
         
     return tabela
         
@@ -78,3 +79,16 @@ def somar_investimentos():
         soma+= float(row['comprado'])
         
     return soma
+
+
+def total_lucro_atual():
+    arquivo = ler_arquivo_investimentos()
+    total = 0
+    for i, row in arquivo.iterrows():
+        cotacao = float(cotar_moeda(row['moeda']))
+        total += row['total_comprado'] * cotacao
+    
+    return total    
+
+
+cotar_moeda('BTC')

@@ -23,6 +23,17 @@ def exibir_soma_investimentos():
     label_total_investido.configure(text=f'Total investido\nR$ {soma:.2f}')
     
 
+def exibir_total_lucro():
+    soma_investido = somar_investimentos()
+    soma_atual = total_lucro_atual()
+    total = soma_atual - soma_investido
+    
+    if total > 0:
+        valor_lucro_prejuizo.configure(text_color='green', font=('', 18), text=f'R$ {total:.2f}')
+    else:
+        valor_lucro_prejuizo.configure(text_color='red', font=('', 18), text=f'R$ {total:.2f}')
+        
+    
 def exibir_cotacao(moeda_selecionada):
     valor = float(cotar_moeda(moeda_selecionada))
     valor_moeda.configure(text=f'R$ {valor:.2f}')
@@ -49,6 +60,7 @@ frame_total_investido = tk.CTkFrame(janela)
 label_total_investido = tk.CTkLabel(frame_total_investido)
 frame_lucro_prejuizo = tk.CTkFrame(janela)
 label_lucro_prejuizo = tk.CTkLabel(frame_lucro_prejuizo, text='Lucro/Prejuízo Total')
+valor_lucro_prejuizo = tk.CTkLabel(frame_lucro_prejuizo)
 
 
 # Posicionar na janela
@@ -64,12 +76,14 @@ janela_dados_investimentos.grid(column=0, row=6, pady=20, padx=10, columnspan=2)
 frame_total_investido.grid(column=0, row=7, pady=(0,20), padx=20, columnspan=2, sticky='w')
 label_total_investido.pack(pady=10, padx=40)
 frame_lucro_prejuizo.grid(column=1, row=7, pady=(0,20), padx=20)
-label_lucro_prejuizo.pack(pady=10, padx=40)
+label_lucro_prejuizo.pack(padx=30)
+valor_lucro_prejuizo.pack()
 
 
 
 atualizar_tabela()
 exibir_soma_investimentos()
+exibir_total_lucro()
 
 
 janela.mainloop()
