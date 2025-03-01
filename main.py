@@ -1,5 +1,6 @@
 import customtkinter as tk
 from utilidades.funcoes import *
+from utilidades.registro_compra import *
 
 
 def atualizar_tabela():
@@ -33,10 +34,9 @@ def exibir_total_lucro():
     else:
         valor_lucro_prejuizo.configure(text_color='red', font=('', 18), text=f'R$ {total:.2f}')
         
-    
-def exibir_cotacao(moeda_selecionada):
-    valor = float(cotar_moeda(moeda_selecionada))
-    valor_moeda.configure(text=f'R$ {valor:.2f}')
+
+def configurar_label_cotacao(valor):
+    valor_moeda.configure(text=valor)
     
 
 janela = tk.CTk()
@@ -50,11 +50,14 @@ lista_criptos = nomes_moedas()
 titulo = tk.CTkLabel(janela, font=('', 24), text='Controle de Criptos')
 label_consulta = tk.CTkLabel(janela, font=('', 18), text='Consulta Cripto')
 label_cotacao = tk.CTkLabel(janela, font=('', 18), text='Cotação Atual')
-select_moeda = tk.CTkOptionMenu(janela, width=200, font=('', 16), values=lista_criptos, command=exibir_cotacao)
+
+select_moeda = tk.CTkOptionMenu(janela, width=200, font=('', 16), values=lista_criptos, command=lambda moeda: configurar_label_cotacao(formatar_cotacao(moeda)))
+
 valor_moeda = tk.CTkLabel(janela, font=('', 16), text='R$ 0,00')
 label_compra = tk.CTkLabel(janela, font=('', 18), text='Compra de Moeda')
 campo_compra = tk.CTkEntry(janela, width=170, placeholder_text='Digite o Valor comprado')
-botao_comprar = tk.CTkButton(janela, height=50, border_width=3, hover=True, font=('', 16), text='Comprar')
+botao_comprar = tk.CTkButton(janela, height=50, border_width=3, hover=True, font=('', 16), text='Comprar', 
+                             command=lambda: abrir_janela_registro_compra(janela, select_moeda.get(), campo_compra.get()))
 janela_dados_investimentos = tk.CTkTextbox(janela, wrap='none', font=('Courier New', 13), width=730, height=200)
 frame_total_investido = tk.CTkFrame(janela)
 label_total_investido = tk.CTkLabel(frame_total_investido)
