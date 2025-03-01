@@ -21,6 +21,12 @@ def nomes_moedas():
     return lista_criptos
     
 
+
+def formatar_cotacao(moeda_selecionada):
+    valor = float(cotar_moeda(moeda_selecionada))
+    return f'R$ {valor:.2f}'
+
+
 def cotar_moeda(moeda):
     if not moeda == 'Selecione a moeda':
         # Endpoint público da Binance para consultar o preço de um par de criptomoedas
@@ -89,6 +95,3 @@ def total_lucro_atual():
         total += row['total_comprado'] * cotacao
     
     return total    
-
-
-cotar_moeda('BTC')
