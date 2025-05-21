@@ -1,57 +1,173 @@
 import customtkinter as tk
+import threading
 from utilidades.funcoes import *
 from utilidades.registro_compra import *
 
 
+def atualizar_dados_em_thread(popup, progress_bar):
+    """
+    Função executada em uma thread separada para atualizar os dados.
+
+    Parâmetros:
+        popup (tk.CTkToplevel): A janela popup de progresso.
+        progress_bar (tk.CTkProgressBar): A barra de progresso na popup.
+    """
+    print('Atualizando dados (em thread)... INÍCIO')
+    total_etapas = 3
+    for i in range(total_etapas):
+        if i == 0:
+            print('Atualizando tabela...')
+            try:
+                atualizar_tabela()
+                print('Tabela atualizada.')
+            except Exception as e:
+                print(f"Erro ao atualizar tabela: {e}")
+                janela.after(0, lambda: mostrar_erro(popup, "Erro ao atualizar tabela."))
+                return # Encerra a thread
+        elif i == 1:
+            print('Exibindo soma dos investimentos...')
+            try:
+                exibir_soma_investimentos()
+                print('Soma dos investimentos exibida.')
+            except Exception as e:
+                print(f"Erro ao exibir soma: {e}")
+                janela.after(0, lambda: mostrar_erro(popup, "Erro ao exibir soma dos investimentos."))
+                return # Encerra a thread
+        elif i == 2:
+            print('Exibindo lucro total...')
+            try:
+                exibir_total_lucro()
+                print('Lucro total exibido.')
+            except Exception as e:
+                print(f"Erro ao exibir lucro: {e}")
+                janela.after(0, lambda: mostrar_erro(popup, "Erro ao exibir lucro total."))
+                return # Encerra a thread
+        progress_bar.set((i + 1) / total_etapas)  # Atualiza a barra de progresso
+    print('Dados atualizados (em thread)! FIM')
+    janela.after(0, popup.destroy)
+
+
+def mostrar_erro(parent, mensagem):
+    """
+    Função para exibir uma mensagem de erro em uma popup.
+
+    Parâmetros:
+        parent (tk.CTk): Janela pai.
+        mensagem (str): Mensagem de erro a exibir.
+    """
+    erro_popup = tk.CTkToplevel(parent)
+    erro_popup.title("Erro")
+    tk.CTkLabel(erro_popup, text=mensagem).pack(padx=20, pady=10)
+    tk.CTkButton(erro_popup, text="OK", command=erro_popup.destroy).pack(padx=20, pady=10)
+
+
+def atualizar_todos_dados():
+    """
+    Função chamada ao clicar no botão de atualizar.
+    Cria a popup de progresso e inicia a thread de atualização.
+    """
+    popup = tk.CTkToplevel(janela)
+    popup.title('Atualizando Valores...')
+    popup.geometry('200x100')
+    popup.grab_set()
+    label = tk.CTkLabel(popup, text="Atualizando Valores...")
+    label.pack(padx=20, pady=10)
+    progress_bar = tk.CTkProgressBar(popup, mode='determinate')
+    progress_bar.pack(padx=20, pady=10)
+    progress_bar.set(0)
+
+    thread_atualizacao = threading.Thread(target=atualizar_dados_em_thread, args=(popup, progress_bar))
+    thread_atualizacao.start()
+    botao_atualizar_tabela.configure(state="disabled")  # Desabilita o botão durante a atualização
+    janela.after(10, verificar_thread_e_reabilitar_botao, thread_atualizacao)  # Inicia a verificação
+
+
+def verificar_thread_e_reabilitar_botao(thread):
+    """
+    Função para verificar se a thread de atualização terminou e reabilitar o botão.
+
+    Parâmetros:
+        thread (threading.Thread): A thread de atualização.
+    """
+    if thread.is_alive():
+        janela.after(10, verificar_thread_e_reabilitar_botao, thread)  # Verifica novamente após 10ms
+    else:
+        botao_atualizar_tabela.configure(state="normal")  # Reabilita o botão após a conclusão
+
+
 def atualizar_tabela():
-    tabela_investimentos = listar_investimentos()
-    tabela_em_string = ''
-    for linha in tabela_investimentos:
-        tabela_em_string += linha + '\n'
-        
-    janela_dados_investimentos.configure(state='normal')
-    
-    janela_dados_investimentos.delete(0.0, 'end')
-    janela_dados_investimentos.insert(0.0, tabela_em_string)
-    
-    janela_dados_investimentos.configure(state='disable')
-        
-    return tabela_em_string
+    """
+    Função para atualizar a tabela de investimentos na interface.
+    """
+    try:
+        tabela_investimentos = listar_investimentos()
+        tabela_em_string = ''
+        if tabela_investimentos: # Verifica se a lista não está vazia
+            for linha in tabela_investimentos:
+                tabela_em_string += linha + '\n'
+        else:
+            tabela_em_string = "Nenhum investimento encontrado."
+
+        janela_dados_investimentos.configure(state='normal')
+        janela_dados_investimentos.delete(0.0, 'end')
+        janela_dados_investimentos.insert(0.0, tabela_em_string)
+        janela_dados_investimentos.configure(state='disable')
+    except Exception as e:
+        print(f"Erro ao atualizar tabela: {e}")
+        raise  # Re-lança a exceção para ser tratada na thread
 
 
 def exibir_soma_investimentos():
-    soma = somar_investimentos()
-    label_total_investido.configure(text=f'Total investido\nR$ {soma:.2f}')
-    
+    """
+    Função para exibir a soma dos investimentos.
+    """
+    try:
+        soma = somar_investimentos()
+        label_total_investido.configure(text=f'Total investido\nR$ {soma:.2f}')
+    except Exception as e:
+        print(f"Erro ao exibir soma dos investimentos: {e}")
+        raise  # Re-lança a exceção para ser tratada na thread
+
 
 def exibir_total_lucro():
-    soma_investido = somar_investimentos()
-    soma_atual = total_lucro_atual()
-    total = soma_atual - soma_investido
-    
-    if total > 0:
-        valor_lucro_prejuizo.configure(text_color='green', font=('', 18), text=f'R$ {total:.2f}')
-    else:
-        valor_lucro_prejuizo.configure(text_color='red', font=('', 18), text=f'R$ {total:.2f}')
-        
+    """
+    Função para exibir o lucro total.
+    """
+    try:
+        soma_investido = somar_investimentos()
+        soma_atual = total_lucro_atual()
+        total = soma_atual - soma_investido
+
+        if total > 0:
+            valor_lucro_prejuizo.configure(text_color='green', font=('', 18), text=f'R$ {total:.2f}')
+        else:
+            valor_lucro_prejuizo.configure(text_color='red', font=('', 18), text=f'R$ {total:.2f}')
+    except Exception as e:
+        print(f"Erro ao exibir lucro total: {e}")
+        raise  # Re-lança a exceção para ser tratada na thread
+
 
 def configurar_label_cotacao(valor):
+    """
+    Função para configurar o texto de um label com o valor da cotação.
+    """
     valor_moeda.configure(text=valor)
-    
+
 
 janela = tk.CTk()
 janela.geometry('650x560')
 janela.title('Controle de Criptos')
 janela.grid_columnconfigure((0, 1), weight=1)
 
-lista_criptos = nomes_moedas()    
-    
+lista_criptos = nomes_moedas()
+
 # Criar labels e campos
 titulo = tk.CTkLabel(janela, font=('', 24), text='Controle de Criptos')
 label_consulta = tk.CTkLabel(janela, font=('', 18), text='Consulta Cripto')
 label_cotacao = tk.CTkLabel(janela, font=('', 18), text='Cotação Atual')
 
-select_moeda = tk.CTkOptionMenu(janela, width=200, font=('', 16), values=lista_criptos, command=lambda moeda: configurar_label_cotacao(formatar_cotacao(moeda)))
+select_moeda = tk.CTkOptionMenu(janela, width=200, font=('', 16), values=lista_criptos,
+                                command=lambda moeda: configurar_label_cotacao(formatar_cotacao(moeda)))
 
 valor_moeda = tk.CTkLabel(janela, font=('', 16), text='R$ 0,00')
 label_compra = tk.CTkLabel(janela, font=('', 18), text='Compra de Moeda')
@@ -64,29 +180,29 @@ label_total_investido = tk.CTkLabel(frame_total_investido)
 frame_lucro_prejuizo = tk.CTkFrame(janela)
 label_lucro_prejuizo = tk.CTkLabel(frame_lucro_prejuizo, text='Lucro/Prejuízo Total')
 valor_lucro_prejuizo = tk.CTkLabel(frame_lucro_prejuizo)
-
+botao_atualizar_tabela = tk.CTkButton(janela, height=50, border_width=2, hover=True, text='Atualizar Tabela',
+                                     command=atualizar_todos_dados)
 
 # Posicionar na janela
-titulo.grid(row=0, column=0, padx=20, pady=20, sticky="ew", columnspan=2)
-label_consulta.grid(column=0, row=1, pady=(0, 10), padx=20, sticky='w')
-label_cotacao.grid(column=1, row=1, pady=(0, 10), padx=20, sticky='w')
-select_moeda.grid(column=0, row=2, pady=(0, 10), padx=20, sticky='w')
-valor_moeda.grid(column=1, row=2, pady=(0, 10), padx=20, sticky='w')
-label_compra.grid(column=0, row=4, pady=(20, 10), padx=20, sticky='w')
-campo_compra.grid(column=0, row=5, pady=(0, 10), padx=20, sticky='w')
-botao_comprar.grid(column=1, row=4, pady=(0, 10), padx=20, sticky='sew', rowspan=2)
-janela_dados_investimentos.grid(column=0, row=6, pady=20, padx=10, columnspan=2)
-frame_total_investido.grid(column=0, row=7, pady=(0,20), padx=20, columnspan=2, sticky='w')
+titulo.grid(row=0, column=0, padx=20, pady=20, sticky="ew", columnspan=4)
+label_consulta.grid(column=0, row=1, pady=(0, 10), padx=20, sticky='w', columnspan=2)
+label_cotacao.grid(column=2, row=1, pady=(0, 10), padx=20, sticky='w', columnspan=2)
+select_moeda.grid(column=0, row=2, pady=(0, 10), padx=20, sticky='w', columnspan=2)
+valor_moeda.grid(column=2, row=2, pady=(0, 10), padx=20, sticky='w', columnspan=2)
+label_compra.grid(column=0, row=4, pady=(20, 10), padx=20, sticky='w', columnspan=2)
+campo_compra.grid(column=0, row=5, pady=(0, 10), padx=20, sticky='w', columnspan=2)
+botao_comprar.grid(column=2, row=4, pady=(0, 10), padx=20, sticky='sew', rowspan=2, columnspan=2)
+janela_dados_investimentos.grid(column=0, row=6, pady=20, padx=10, columnspan=4)
+frame_total_investido.grid(column=0, row=7, pady=(0, 20), padx=20, sticky='w')
 label_total_investido.pack(pady=10, padx=40)
-frame_lucro_prejuizo.grid(column=1, row=7, pady=(0,20), padx=20)
+frame_lucro_prejuizo.grid(column=3, row=7, pady=(0, 20), padx=20)
 label_lucro_prejuizo.pack(padx=30)
 valor_lucro_prejuizo.pack()
+botao_atualizar_tabela.grid(column=1, row=7, pady=(0, 20), columnspan=2, sticky='ew')
 
-
-
+# Chamadas iniciais para exibir os dados
 atualizar_tabela()
 exibir_soma_investimentos()
 exibir_total_lucro()
-
 
 janela.mainloop()

@@ -21,7 +21,6 @@ def nomes_moedas():
     return lista_criptos
     
 
-
 def formatar_cotacao(moeda_selecionada):
     valor = float(cotar_moeda(moeda_selecionada))
     return f'R$ {valor:.2f}'
@@ -36,7 +35,6 @@ def cotar_moeda(moeda):
         preco = response.json()
         
         return preco['price']
-        #print(preco['price'])
     else:
         preco = 0
 
