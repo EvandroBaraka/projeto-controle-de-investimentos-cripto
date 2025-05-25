@@ -19,7 +19,10 @@ def calcula_total_comprado(valorComprado, cotacao):
         print(f'Erro: {e}')
         resultado = 0
         
-    return resultado
+    if(float(cotacao) > 10000):
+        return f'{resultado:.12f}'
+    else:
+        return resultado
 
 
 def abrir_janela_registro_compra(janela_pai, moeda_selecionada='Selecione a moeda', valor_comprado=0):
@@ -43,6 +46,36 @@ def abrir_janela_registro_compra(janela_pai, moeda_selecionada='Selecione a moed
     def on_nova_cripto_selecionada(moeda):
         ajustar_campo_cotacao(moeda)
         ajustar_campo_total_comprado()
+    
+    
+    def registrar_compra():
+        adicionar_investimento_no_arquivo(campo_select_moeda.get(),
+                                        campo_data.get_date(),
+                                        campo_cotacao.get(),
+                                        campo_valor_comprado.get(),
+                                        campo_total_comprado.get())
+        janelaRegistroCompra.destroy()
+    
+    
+    def confirmar_registro():
+        print('Confirmação...')
+        janelaConfirmacao = tk.CTkToplevel(janela_pai)
+        janelaConfirmacao.title('Confirmar Registro')
+        janelaConfirmacao.geometry('400x250')
+        janelaConfirmacao.grid_columnconfigure((0, 1), weight=1)
+        janelaConfirmacao.lift()
+        janelaConfirmacao.focus_force()
+        janelaConfirmacao.grab_set()
+        
+        strDadosCompra = f'Moeda: {campo_select_moeda.get()} \n\nData: {campo_data.get_date()}\n\nCotação: {campo_cotacao.get()}\n\nValor comprado: R${float(campo_valor_comprado.get()):.2f}\n\nTotal Comprado: {campo_select_moeda.get()} {campo_total_comprado.get()}'
+        
+        dadosCompra = tk.CTkLabel(janelaConfirmacao, font=('', 14), text=strDadosCompra)
+        botaoConfirma = tk.CTkButton(janelaConfirmacao, hover=True, text='Confirma', command=lambda:( registrar_compra(), janelaConfirmacao.destroy()))
+        botaoCancela = tk.CTkButton(janelaConfirmacao, hover=True, text='Cancela', command=lambda: janelaConfirmacao.destroy())
+        
+        dadosCompra.grid(row=0, column=0, columnspan=2, padx=10, pady=10)
+        botaoConfirma.grid(row=1, column=0, padx=5, pady=25)
+        botaoCancela.grid(row=1, column=1, padx=5, pady=25)
     
     
     janelaRegistroCompra = tk.CTkToplevel(janela_pai)
@@ -80,7 +113,7 @@ def abrir_janela_registro_compra(janela_pai, moeda_selecionada='Selecione a moed
     campo_valor_comprado.bind("<FocusOut>", lambda event: ajustar_campo_total_comprado())
     campo_valor_comprado.bind("<KeyRelease>", lambda event: ajustar_campo_total_comprado())
     
-    botao_registrar_compra = tk.CTkButton(janelaRegistroCompra, height=50, border_width=3, hover=True, font=('', 16), text='Registrar Compra', command=lambda:(print('registrado')))
+    botao_registrar_compra = tk.CTkButton(janelaRegistroCompra, height=50, border_width=3, hover=True, font=('', 16), text='Registrar Compra', command=lambda: confirmar_registro())
     
     
     label_moeda.pack(pady=10)

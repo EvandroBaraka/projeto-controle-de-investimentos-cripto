@@ -63,6 +63,18 @@ def ler_arquivo_investimentos():
     return arquivo
 
 
+def adicionar_investimento_no_arquivo(moeda, dataTransacao, cotacao, valorComprado, totalComprado, transacao='compra'):
+    arquivo = ler_arquivo_investimentos()
+    novaLinha = [moeda, transacao, dataTransacao, cotacao, valorComprado, totalComprado]
+    
+    novaLinha[2] = pd.to_datetime(novaLinha[2], errors='coerce')
+    
+    arquivo.loc[len(arquivo)] = novaLinha
+    
+    arquivo.to_excel('utilidades/compra_cripto.xlsx', index=False)
+    print('Dados adicionados.')
+
+
 def listar_investimentos():
     tabela = [f"{'Moeda':^5} | {'Transação':^9} | {'Data da Transacao':^15} | {'Cotação na Data':^18} | {'Comprado':^12} | {'Total Comprado':^14} | {'Cotação Atual':^15}"]
     arquivo = ler_arquivo_investimentos()
@@ -92,4 +104,5 @@ def total_lucro_atual():
         cotacao = float(cotar_moeda(row['moeda']))
         total += row['total_comprado'] * cotacao
     
-    return total    
+    return total
+

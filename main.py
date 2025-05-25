@@ -1,3 +1,5 @@
+import tkinter
+from tkinter import ttk
 import customtkinter as tk
 import threading
 from utilidades.funcoes import *
@@ -157,7 +159,7 @@ def configurar_label_cotacao(valor):
 janela = tk.CTk()
 janela.geometry('650x560')
 janela.title('Controle de Criptos')
-janela.grid_columnconfigure((0, 1), weight=1)
+janela.grid_columnconfigure((0, 1, 2), weight=1)
 
 lista_criptos = nomes_moedas()
 
@@ -195,10 +197,10 @@ botao_comprar.grid(column=2, row=4, pady=(0, 10), padx=20, sticky='sew', rowspan
 janela_dados_investimentos.grid(column=0, row=6, pady=20, padx=10, columnspan=4)
 frame_total_investido.grid(column=0, row=7, pady=(0, 20), padx=20, sticky='w')
 label_total_investido.pack(pady=10, padx=40)
-frame_lucro_prejuizo.grid(column=3, row=7, pady=(0, 20), padx=20)
+frame_lucro_prejuizo.grid(column=2, row=7, pady=(0, 20), padx=20)
 label_lucro_prejuizo.pack(padx=30)
 valor_lucro_prejuizo.pack()
-botao_atualizar_tabela.grid(column=1, row=7, pady=(0, 20), columnspan=2, sticky='ew')
+botao_atualizar_tabela.grid(column=1, row=7, pady=(0, 20), sticky='ew')
 
 # Chamadas iniciais para exibir os dados
 atualizar_tabela()
