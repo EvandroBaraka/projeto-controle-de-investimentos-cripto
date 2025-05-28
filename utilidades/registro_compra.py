@@ -1,3 +1,6 @@
+import tkinter
+from tkinter import messagebox
+import tkinter.messagebox
 import customtkinter as tk
 from utilidades.funcoes import *
 from tkcalendar import DateEntry
@@ -51,7 +54,7 @@ def abrir_janela_registro_compra(janela_pai, moeda_selecionada='Selecione a moed
     def registrar_compra():
         adicionar_investimento_no_arquivo(campo_select_moeda.get(),
                                         campo_data.get_date(),
-                                        campo_cotacao.get(),
+                                        campo_cotacao.get().replace('R$', ''),
                                         campo_valor_comprado.get(),
                                         campo_total_comprado.get())
         janelaRegistroCompra.destroy()
@@ -59,23 +62,14 @@ def abrir_janela_registro_compra(janela_pai, moeda_selecionada='Selecione a moed
     
     def confirmar_registro():
         print('Confirmação...')
-        janelaConfirmacao = tk.CTkToplevel(janela_pai)
-        janelaConfirmacao.title('Confirmar Registro')
-        janelaConfirmacao.geometry('400x250')
-        janelaConfirmacao.grid_columnconfigure((0, 1), weight=1)
-        janelaConfirmacao.lift()
-        janelaConfirmacao.focus_force()
-        janelaConfirmacao.grab_set()
         
         strDadosCompra = f'Moeda: {campo_select_moeda.get()} \n\nData: {campo_data.get_date()}\n\nCotação: {campo_cotacao.get()}\n\nValor comprado: R${float(campo_valor_comprado.get()):.2f}\n\nTotal Comprado: {campo_select_moeda.get()} {campo_total_comprado.get()}'
         
-        dadosCompra = tk.CTkLabel(janelaConfirmacao, font=('', 14), text=strDadosCompra)
-        botaoConfirma = tk.CTkButton(janelaConfirmacao, hover=True, text='Confirma', command=lambda:( registrar_compra(), janelaConfirmacao.destroy()))
-        botaoCancela = tk.CTkButton(janelaConfirmacao, hover=True, text='Cancela', command=lambda: janelaConfirmacao.destroy())
+        resposta = messagebox.askokcancel(title='Confirmar Registro', message=f'Confirme os dados e pressione OK:\n{strDadosCompra}')
         
-        dadosCompra.grid(row=0, column=0, columnspan=2, padx=10, pady=10)
-        botaoConfirma.grid(row=1, column=0, padx=5, pady=25)
-        botaoCancela.grid(row=1, column=1, padx=5, pady=25)
+        if(resposta):
+            registrar_compra()
+        
     
     
     janelaRegistroCompra = tk.CTkToplevel(janela_pai)
@@ -96,7 +90,7 @@ def abrir_janela_registro_compra(janela_pai, moeda_selecionada='Selecione a moed
     campo_select_moeda.set(moeda_selecionada)
     
     label_data_transacao = tk.CTkLabel(janelaRegistroCompra, font=('', 18), text='Data da Transação')
-    campo_data = DateEntry(janelaRegistroCompra, date_pattern="dd/mm/yyyy", background="darkblue", foreground="darkblue", borderwidth=2, font=('', 15))
+    campo_data = DateEntry(janelaRegistroCompra, date_pattern="dd/mm/yyyy", background="darkblue", foreground="darkblue", borderwidth=2, font=('', 13))
     
     label_cotacao = tk.CTkLabel(janelaRegistroCompra, font=('', 18), text='Cotação na data')
     campo_cotacao = tk.CTkEntry(janelaRegistroCompra, width=170)
@@ -110,10 +104,11 @@ def abrir_janela_registro_compra(janela_pai, moeda_selecionada='Selecione a moed
     label_total_comprado = tk.CTkLabel(janelaRegistroCompra, font=('', 18), text='Tota comprado')
     campo_total_comprado = tk.CTkEntry(janelaRegistroCompra, width=170)
     
+    campo_data.bind('<<DateEntrySelected>>', lambda event: print('Data funcionou!!'))
     campo_valor_comprado.bind("<FocusOut>", lambda event: ajustar_campo_total_comprado())
     campo_valor_comprado.bind("<KeyRelease>", lambda event: ajustar_campo_total_comprado())
     
-    botao_registrar_compra = tk.CTkButton(janelaRegistroCompra, height=50, border_width=3, hover=True, font=('', 16), text='Registrar Compra', command=lambda: confirmar_registro())
+    botao_registrar_compra = tk.CTkButton(janelaRegistroCompra, height=50, border_width=3, hover=True, font=('', 16), text='Registrar', command=lambda: confirmar_registro())
     
     
     label_moeda.pack(pady=10)

@@ -59,6 +59,7 @@ def mostrar_erro(parent, mensagem):
     """
     erro_popup = tk.CTkToplevel(parent)
     erro_popup.title("Erro")
+    erro_popup.grab_set()
     tk.CTkLabel(erro_popup, text=mensagem).pack(padx=20, pady=10)
     tk.CTkButton(erro_popup, text="OK", command=erro_popup.destroy).pack(padx=20, pady=10)
 
@@ -102,22 +103,21 @@ def atualizar_tabela():
     Função para atualizar a tabela de investimentos na interface.
     """
     try:
-        tabela_investimentos = listar_investimentos()
-        tabela_em_string = ''
-        if tabela_investimentos: # Verifica se a lista não está vazia
-            for linha in tabela_investimentos:
-                tabela_em_string += linha + '\n'
-        else:
-            tabela_em_string = "Nenhum investimento encontrado."
-
-        janela_dados_investimentos.configure(state='normal')
-        janela_dados_investimentos.delete(0.0, 'end')
-        janela_dados_investimentos.insert(0.0, tabela_em_string)
-        janela_dados_investimentos.configure(state='disable')
+        tabelaInvestimentos = ler_arquivo_investimentos()
+        
+        for item in janela_dados_investimentos.get_children():
+            janela_dados_investimentos.delete(item)
+            
+        for i, row in tabelaInvestimentos.iterrows():
+            cotacaoAtual = float(cotar_moeda(row['moeda']))
+            dataFormatada = row['data_transacao'].strftime('%d/%m/%Y') if pd.notnull(row['data_transacao']) else 'N/A'
+            novaLinha = [row['moeda'], row['transacao'], dataFormatada, row['cotacao_na_data'], row['comprado'], row['total_comprado'], cotacaoAtual]
+            
+            janela_dados_investimentos.insert('', tkinter.END, values=novaLinha)
     except Exception as e:
-        print(f"Erro ao atualizar tabela: {e}")
-        raise  # Re-lança a exceção para ser tratada na thread
-
+        print(f'Erro ao atualizar a tabela: {e}')
+        raise # Re-lança a exceção para ser tratada na thread
+    
 
 def exibir_soma_investimentos():
     """
@@ -157,7 +157,7 @@ def configurar_label_cotacao(valor):
 
 
 janela = tk.CTk()
-janela.geometry('650x560')
+janela.geometry('700x630')
 janela.title('Controle de Criptos')
 janela.grid_columnconfigure((0, 1, 2), weight=1)
 
@@ -174,9 +174,31 @@ select_moeda = tk.CTkOptionMenu(janela, width=200, font=('', 16), values=lista_c
 valor_moeda = tk.CTkLabel(janela, font=('', 16), text='R$ 0,00')
 label_compra = tk.CTkLabel(janela, font=('', 18), text='Compra de Moeda')
 campo_compra = tk.CTkEntry(janela, width=170, placeholder_text='Digite o Valor comprado')
-botao_comprar = tk.CTkButton(janela, height=50, border_width=3, hover=True, font=('', 16), text='Comprar', 
+botao_comprar = tk.CTkButton(janela, height=50, border_width=3, hover=True, font=('', 16), text='Novo Registro', 
                              command=lambda: abrir_janela_registro_compra(janela, select_moeda.get(), campo_compra.get()))
-janela_dados_investimentos = tk.CTkTextbox(janela, wrap='none', font=('Courier New', 13), width=730, height=200)
+
+style = ttk.Style()
+style.configure('Treeview.Heading', font=('', 11, 'bold'))
+style.configure('Treeview', font=('', 10))
+janela_dados_investimentos = ttk.Treeview(janela, columns=['column1', 'column2', 'column3', 'column4', 'column5', 'column6', 'column7'], show='headings')
+
+janela_dados_investimentos.column('column1', width=60, minwidth=60, stretch=False)
+janela_dados_investimentos.heading('#1', text='Moeda', anchor='center')
+janela_dados_investimentos.column('column2', width=90, minwidth=50, stretch=False)
+janela_dados_investimentos.heading('#2', text='Transação', anchor='center')
+janela_dados_investimentos.column('column3', width=80, minwidth=50, stretch=False)
+janela_dados_investimentos.heading('#3', text='Data', anchor='center')
+janela_dados_investimentos.column('column4', width=90, minwidth=50, stretch=False)
+janela_dados_investimentos.heading('#4', text='Cotação')
+janela_dados_investimentos.column('column5', width=120, minwidth=50, stretch=False)
+janela_dados_investimentos.heading('#5', text='Valor Comprado')
+janela_dados_investimentos.column('column6', width=130, minwidth=50, stretch=False)
+janela_dados_investimentos.heading('#6', text='Total Comprado')
+janela_dados_investimentos.column('column7', width=120, minwidth=50, stretch=False)
+janela_dados_investimentos.heading('#7', text='Cotação Atual')
+
+botao_deletar = tk.CTkButton(janela, hover=True, text='Deletar', command=lambda: deletar_dados(janela_dados_investimentos))
+
 frame_total_investido = tk.CTkFrame(janela)
 label_total_investido = tk.CTkLabel(frame_total_investido)
 frame_lucro_prejuizo = tk.CTkFrame(janela)
@@ -186,7 +208,7 @@ botao_atualizar_tabela = tk.CTkButton(janela, height=50, border_width=2, hover=T
                                      command=atualizar_todos_dados)
 
 # Posicionar na janela
-titulo.grid(row=0, column=0, padx=20, pady=20, sticky="ew", columnspan=4)
+titulo.grid(row=0, column=0, padx=20, pady=20, sticky="ew", columnspan=3)
 label_consulta.grid(column=0, row=1, pady=(0, 10), padx=20, sticky='w', columnspan=2)
 label_cotacao.grid(column=2, row=1, pady=(0, 10), padx=20, sticky='w', columnspan=2)
 select_moeda.grid(column=0, row=2, pady=(0, 10), padx=20, sticky='w', columnspan=2)
@@ -194,13 +216,14 @@ valor_moeda.grid(column=2, row=2, pady=(0, 10), padx=20, sticky='w', columnspan=
 label_compra.grid(column=0, row=4, pady=(20, 10), padx=20, sticky='w', columnspan=2)
 campo_compra.grid(column=0, row=5, pady=(0, 10), padx=20, sticky='w', columnspan=2)
 botao_comprar.grid(column=2, row=4, pady=(0, 10), padx=20, sticky='sew', rowspan=2, columnspan=2)
-janela_dados_investimentos.grid(column=0, row=6, pady=20, padx=10, columnspan=4)
-frame_total_investido.grid(column=0, row=7, pady=(0, 20), padx=20, sticky='w')
+janela_dados_investimentos.grid(column=0, row=6, pady=20, padx=10, columnspan=3)
+botao_deletar.grid(column=1, row=7, pady=(0, 20))
+frame_total_investido.grid(column=0, row=8, pady=(0, 20), padx=20, sticky='w')
 label_total_investido.pack(pady=10, padx=40)
-frame_lucro_prejuizo.grid(column=2, row=7, pady=(0, 20), padx=20)
+frame_lucro_prejuizo.grid(column=2, row=8, pady=(0, 20), padx=20)
 label_lucro_prejuizo.pack(padx=30)
 valor_lucro_prejuizo.pack()
-botao_atualizar_tabela.grid(column=1, row=7, pady=(0, 20), sticky='ew')
+botao_atualizar_tabela.grid(column=1, row=8, pady=(0, 20), sticky='ew')
 
 # Chamadas iniciais para exibir os dados
 atualizar_tabela()

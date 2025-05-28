@@ -1,6 +1,8 @@
 import pandas as pd
 import requests
 import os
+import tkinter
+from tkinter import messagebox
 
 
 def nomes_moedas():
@@ -63,29 +65,29 @@ def ler_arquivo_investimentos():
     return arquivo
 
 
-def adicionar_investimento_no_arquivo(moeda, dataTransacao, cotacao, valorComprado, totalComprado, transacao='compra'):
+def adicionar_investimento_no_arquivo(moeda, dataTransacao, cotacao, valorComprado, totalComprado, transacao='compra', posicao='len(arquivo)'):
     arquivo = ler_arquivo_investimentos()
     novaLinha = [moeda, transacao, dataTransacao, cotacao, valorComprado, totalComprado]
     
     novaLinha[2] = pd.to_datetime(novaLinha[2], errors='coerce')
     
-    arquivo.loc[len(arquivo)] = novaLinha
+    arquivo.loc[posicao] = novaLinha
     
     arquivo.to_excel('utilidades/compra_cripto.xlsx', index=False)
     print('Dados adicionados.')
 
 
-def listar_investimentos():
-    tabela = [f"{'Moeda':^5} | {'Transação':^9} | {'Data da Transacao':^15} | {'Cotação na Data':^18} | {'Comprado':^12} | {'Total Comprado':^14} | {'Cotação Atual':^15}"]
-    arquivo = ler_arquivo_investimentos()
+# def listar_investimentos():
+#     tabela = [f"{'Moeda':^5} | {'Transação':^9} | {'Data da Transacao':^15} | {'Cotação na Data':^18} | {'Comprado':^12} | {'Total Comprado':^14} | {'Cotação Atual':^15}"]
+#     arquivo = ler_arquivo_investimentos()
     
-    for i, row in arquivo.iterrows():
-        cotacacao = float(cotar_moeda(row['moeda']))
-        data_formatada = row['data_transacao'].strftime('%d/%m/%Y') if pd.notnull(row['data_transacao']) else 'N/A'
+#     for i, row in arquivo.iterrows():
+#         cotacao = float(cotar_moeda(row['moeda']))
+#         data_formatada = row['data_transacao'].strftime('%d/%m/%Y') if pd.notnull(row['data_transacao']) else 'N/A'
         
-        tabela.append(f"{row['moeda']:^5} | {row['transacao']:^9} | {data_formatada:^17} | R${row['cotacao_na_data']:^16} | R${row['comprado']:^10.2f} | {row['total_comprado']:^14.10f} | R${cotacacao:^15}")
+#         tabela.append(f"{row['moeda']:^5} | {row['transacao']:^9} | {data_formatada:^17} | R${row['cotacao_na_data']:^16} | R${row['comprado']:^10.2f} | {row['total_comprado']:^14.10f} | R${cotacao:^15}")
         
-    return tabela
+#     return tabela
         
 
 def somar_investimentos():
@@ -106,3 +108,21 @@ def total_lucro_atual():
     
     return total
 
+
+def deletar_dados(treeview):
+    try:
+        arquivo = ler_arquivo_investimentos()
+        item_selecionado = treeview.selection()[0]
+        indice_item_selecionado = treeview.index(item_selecionado)
+        valores = treeview.item(item_selecionado, 'values')
+        linha_para_remover = arquivo[arquivo.index == indice_item_selecionado].index
+        
+        resposta = messagebox.askokcancel(title='Confirmar remoção de dados', message=f'Deseja realmente remover os dados:\n{valores}')
+        
+        if(resposta):
+            arquivo.drop(linha_para_remover, axis=0, inplace=True)
+            arquivo.to_excel('utilidades/compra_cripto.xlsx', index=False)
+            treeview.delete(item_selecionado)
+    
+    except:
+        tkinter.messagebox.showinfo(title='ERRO', message=f'Selecione o item a ser deletado.')
