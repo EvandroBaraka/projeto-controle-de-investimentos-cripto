@@ -21,6 +21,7 @@ def calcula_total_comprado(valorComprado, cotacao):
     except Exception as e:
         print(f'Erro: {e}')
         resultado = 0
+        return resultado
         
     if(float(cotacao) > 10000):
         return f'{resultado:.12f}'
@@ -30,24 +31,41 @@ def calcula_total_comprado(valorComprado, cotacao):
 
 def abrir_janela_registro_compra(janela_pai, moeda_selecionada='Selecione a moeda', valor_comprado=0):
     
-    def ajustar_campo_cotacao(moeda):
-        cotacao = formatar_cotacao(moeda)
+    def ajustar_campo_cotacao(cotacao):
         campo_cotacao.configure(state='normal')
         campo_cotacao.delete(first_index=0, last_index=99)
         campo_cotacao.insert(0, cotacao)
         campo_cotacao.configure(state='disable')
     
     
+    def data_alterada(moeda, data, event=None):
+        if(moeda.upper() == 'SELECIONE A MOEDA'):
+            from datetime import date
+            messagebox.showerror(title='Selecione uma moeda', message='Selecione uma moeda para consultar a cotação.')
+            campo_data.set_date(date.today())
+            return
+        try:
+            cotacao_media_na_data = obter_cotacao_historica(moeda, data)
+            ajustar_campo_cotacao(cotacao_media_na_data)
+            ajustar_campo_total_comprado()
+        
+        except Exception as e:
+            messagebox.showerror(title='Erro', message=f'Erro: {e}')
+        
+        
     def ajustar_campo_total_comprado(event=None):
         totalComprado = calcula_total_comprado(campo_valor_comprado.get(), campo_cotacao.get())
         campo_total_comprado.configure(state='normal')
         campo_total_comprado.delete(first_index=0, last_index=99)
-        campo_total_comprado.insert(0, totalComprado)
+        campo_total_comprado.insert(0, str(totalComprado))
         campo_total_comprado.configure(state='disable')
         
         
     def on_nova_cripto_selecionada(moeda):
-        ajustar_campo_cotacao(moeda)
+        if(moeda.upper() == 'SELECIONE A MOEDA'):
+            return
+        cotacao = formatar_cotacao(moeda)
+        ajustar_campo_cotacao(cotacao)
         ajustar_campo_total_comprado()
     
     
@@ -71,12 +89,9 @@ def abrir_janela_registro_compra(janela_pai, moeda_selecionada='Selecione a moed
             registrar_compra()
         
     
-    
     janelaRegistroCompra = tk.CTkToplevel(janela_pai)
     janelaRegistroCompra.title('Registro de Compra')
     janelaRegistroCompra.geometry('400x600')
-    janelaRegistroCompra.lift()
-    janelaRegistroCompra.focus_force()
     janelaRegistroCompra.grab_set()
     
     if(moeda_selecionada != 'Selecione a moeda'):
@@ -90,7 +105,7 @@ def abrir_janela_registro_compra(janela_pai, moeda_selecionada='Selecione a moed
     campo_select_moeda.set(moeda_selecionada)
     
     label_data_transacao = tk.CTkLabel(janelaRegistroCompra, font=('', 18), text='Data da Transação')
-    campo_data = DateEntry(janelaRegistroCompra, date_pattern="dd/mm/yyyy", background="darkblue", foreground="darkblue", borderwidth=2, font=('', 13))
+    campo_data = DateEntry(janelaRegistroCompra, date_pattern="dd/mm/yyyy", borderwidth=2, font=('', 13))
     
     label_cotacao = tk.CTkLabel(janelaRegistroCompra, font=('', 18), text='Cotação na data')
     campo_cotacao = tk.CTkEntry(janelaRegistroCompra, width=170)
@@ -104,7 +119,7 @@ def abrir_janela_registro_compra(janela_pai, moeda_selecionada='Selecione a moed
     label_total_comprado = tk.CTkLabel(janelaRegistroCompra, font=('', 18), text='Tota comprado')
     campo_total_comprado = tk.CTkEntry(janelaRegistroCompra, width=170)
     
-    campo_data.bind('<<DateEntrySelected>>', lambda event: print('Data funcionou!!'))
+    campo_data.bind('<<DateEntrySelected>>', lambda event: data_alterada(campo_select_moeda.get(), campo_data.get_date()))
     campo_valor_comprado.bind("<FocusOut>", lambda event: ajustar_campo_total_comprado())
     campo_valor_comprado.bind("<KeyRelease>", lambda event: ajustar_campo_total_comprado())
     

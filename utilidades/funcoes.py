@@ -43,6 +43,61 @@ def cotar_moeda(moeda):
         return preco
 
 
+def obter_cotacao_historica(moeda_cotada, data, intervalo='1d', moeda_base='BRL'):
+    """
+    Obtém a cotação histórica de uma criptomoeda em uma data específica.
+    
+    Args:
+        moeda_base (str): Moeda base (padrão: 'BRL').
+        moeda_cotada (str): Moeda de cotação (exemplo: 'BTC').
+        data (str): Data no formato 'YYYY-MM-DD'.
+        intervalo (str): Intervalo de tempo (padrão: '1d' para diário).
+        
+    Returns:
+        Cotação média na data selecionada.
+    """
+    from datetime import datetime
+    
+    # Converte a data para timestamp em milissegundos
+    timestamp = int(datetime.strptime(str(data), "%Y-%m-%d").timestamp() * 1000)
+    
+    # Par de moedas
+    symbol = f"{moeda_cotada}{moeda_base}".upper()
+    
+    # Endpoint da Binance
+    url = "https://api.binance.com/api/v3/klines"
+    params = {
+        "symbol": symbol,
+        "interval": intervalo,
+        "startTime": timestamp,
+        "limit": 1
+    }
+    
+    try:
+        # Faz a requisição
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        data = response.json()
+        
+        if data:
+            # Desestrutura os dados do candlestick
+            candle = data[0]
+            media_na_data = (float(candle[2]) + float(candle[3])) / 2
+            # return {
+            #     "abertura": float(candle[1]),
+            #     "fechamento": float(candle[4]),
+            #     "máxima": float(candle[2]),
+            #     "mínima": float(candle[3]),
+            #     "volume": float(candle[5]),
+            #     "data": datetime.fromtimestamp(candle[0] / 1000).strftime('%Y-%m-%d %H:%M:%S')
+            # }
+            return media_na_data
+        else:
+            return {"erro": "Nenhum dado encontrado para a data fornecida."}
+    except Exception as e:
+        return {"erro": str(e)}
+
+
 def ler_arquivo_investimentos():
     caminho_arquivo = 'utilidades/compra_cripto.xlsx'
     
@@ -75,19 +130,6 @@ def adicionar_investimento_no_arquivo(moeda, dataTransacao, cotacao, valorCompra
     
     arquivo.to_excel('utilidades/compra_cripto.xlsx', index=False)
     print('Dados adicionados.')
-
-
-# def listar_investimentos():
-#     tabela = [f"{'Moeda':^5} | {'Transação':^9} | {'Data da Transacao':^15} | {'Cotação na Data':^18} | {'Comprado':^12} | {'Total Comprado':^14} | {'Cotação Atual':^15}"]
-#     arquivo = ler_arquivo_investimentos()
-    
-#     for i, row in arquivo.iterrows():
-#         cotacao = float(cotar_moeda(row['moeda']))
-#         data_formatada = row['data_transacao'].strftime('%d/%m/%Y') if pd.notnull(row['data_transacao']) else 'N/A'
-        
-#         tabela.append(f"{row['moeda']:^5} | {row['transacao']:^9} | {data_formatada:^17} | R${row['cotacao_na_data']:^16} | R${row['comprado']:^10.2f} | {row['total_comprado']:^14.10f} | R${cotacao:^15}")
-        
-#     return tabela
         
 
 def somar_investimentos():
