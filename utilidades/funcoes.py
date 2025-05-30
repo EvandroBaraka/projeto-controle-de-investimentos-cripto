@@ -25,7 +25,11 @@ def nomes_moedas():
 
 def formatar_cotacao(moeda_selecionada):
     valor = float(cotar_moeda(moeda_selecionada))
-    return f'R$ {valor:.2f}'
+    print(valor)
+    if(valor >= 0.10):
+        return f'R$ {valor:.2f}'
+    else:
+        return f'R$ {valor:.8f}'
 
 
 def cotar_moeda(moeda):
