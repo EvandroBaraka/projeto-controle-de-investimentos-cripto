@@ -15,7 +15,7 @@ def atualizar_dados_em_thread(popup, progress_bar):
         progress_bar (tk.CTkProgressBar): A barra de progresso na popup.
     """
     print('Atualizando dados (em thread)... INÍCIO')
-    total_etapas = 3
+    total_etapas = 4
     for i in range(total_etapas):
         if i == 0:
             print('Atualizando tabela...')
@@ -27,6 +27,15 @@ def atualizar_dados_em_thread(popup, progress_bar):
                 janela.after(0, lambda: mostrar_erro(popup, "Erro ao atualizar tabela."))
                 return # Encerra a thread
         elif i == 1:
+            print('Atualizando carteira...')
+            try:
+                atualizar_carteira()
+                print('Carteira atualizada.')
+            except Exception as e:
+                print(f"Erro ao atualizar carteira: {e}")
+                janela.after(0, lambda: mostrar_erro(popup, "Erro ao atualizar carteira."))
+                return # Encerra a thread
+        elif i == 2:
             print('Exibindo soma dos investimentos...')
             try:
                 exibir_soma_investimentos()
@@ -35,7 +44,7 @@ def atualizar_dados_em_thread(popup, progress_bar):
                 print(f"Erro ao exibir soma: {e}")
                 janela.after(0, lambda: mostrar_erro(popup, "Erro ao exibir soma dos investimentos."))
                 return # Encerra a thread
-        elif i == 2:
+        elif i == 3:
             print('Exibindo lucro total...')
             try:
                 exibir_total_lucro()
@@ -107,17 +116,64 @@ def atualizar_tabela():
         
         for item in tabela_dados_investimentos.get_children():
             tabela_dados_investimentos.delete(item)
-            
+        
+        lista = []    
         for i, row in tabelaInvestimentos.iterrows():
             cotacaoAtual = float(cotar_moeda(row['moeda']))
             dataFormatada = row['data_transacao'].strftime('%d/%m/%Y') if pd.notnull(row['data_transacao']) else 'N/A'
-            novaLinha = [row['moeda'], row['transacao'], dataFormatada, row['cotacao_na_data'], row['comprado'], row['total_comprado'], cotacaoAtual]
+            novaLinha = [row['moeda'], row['transacao'], dataFormatada, row['cotacao_na_data'], f'R$ {row['comprado']:.2f}', row['total_comprado'], cotacaoAtual]
+            lista.append(novaLinha)
             
-            tabela_dados_investimentos.insert('', tkinter.END, values=novaLinha)
+        for item in lista:
+            tabela_dados_investimentos.insert('', tkinter.END, values=item)
     except Exception as e:
         print(f'Erro ao atualizar a tabela: {e}')
         raise # Re-lança a exceção para ser tratada na thread
     
+
+def atualizar_carteira():
+    """
+    Função para atualizar a tabela da carteira na interface.
+    """
+    try:
+        arquivo = ler_arquivo_investimentos()
+        
+        dadosCarteira = {
+            'cripto': [],
+            'quantidade': [],
+            'total_investido': []
+        }
+        for i, row in arquivo.iterrows():
+            if(row['moeda'] not in dadosCarteira['cripto']):
+                dadosCarteira['cripto'].append(row['moeda'])
+                dadosCarteira['quantidade'].append(row['total_comprado'])
+                dadosCarteira['total_investido'].append(row['comprado'])
+            else:
+                dadosCarteira['quantidade'][dadosCarteira['cripto'].index(row['moeda'])] += row['total_comprado']
+                dadosCarteira['total_investido'][dadosCarteira['cripto'].index(row['moeda'])] += row['comprado']
+        
+        lista = []
+        for i in range(0, len(dadosCarteira['cripto'])):
+            cripto = dadosCarteira['cripto'][i]
+            qtd_total = dadosCarteira['quantidade'][i]
+            total_investido = dadosCarteira['total_investido'][i]
+            cotacao_atual = cotar_moeda(dadosCarteira['cripto'][i])
+            valor_atual_total = float(qtd_total) * float(cotacao_atual)
+            lucro_prejuizo = valor_atual_total - total_investido
+            porcentagem_lucro_prejuizo = (lucro_prejuizo / total_investido) * 100
+            
+            nova_linha = [cripto, qtd_total, cotacao_atual, f'R$ {total_investido:.2f}', f'R$ {valor_atual_total:.2f}', f'R$ {lucro_prejuizo:.2f}', f'{porcentagem_lucro_prejuizo:.2f}%']
+            lista.append(nova_linha)
+        
+        for item in tabela_carteira_atual.get_children():
+            tabela_carteira_atual.delete(item)
+            
+        for item in lista:
+            tabela_carteira_atual.insert('', tkinter.END, values=item)
+    except Exception as e:
+        print(f'Erro ao atualizar a carteira: {e}')
+        raise # Re-lança a exceção para ser tratada na thread
+            
 
 def exibir_soma_investimentos():
     """
@@ -177,7 +233,7 @@ campo_compra = tk.CTkEntry(janela, width=170, placeholder_text='Digite o Valor c
 botao_registrar = tk.CTkButton(janela, height=50, border_width=3, hover=True, font=('', 16), text='Novo Registro', 
                              command=lambda: abrir_janela_registro_compra(janela, select_moeda.get(), campo_compra.get()))
 
-tabview = tk.CTkTabview(janela)
+tabview = tk.CTkTabview(janela, width=650)
 tabview.add("Histórico de Transações")
 tabview.add("Carteira Atual")
 tabview.set("Histórico de Transações")
@@ -187,37 +243,37 @@ style.configure('Treeview.Heading', font=('', 11, 'bold'))
 style.configure('Treeview', font=('', 10))
 
 tabela_dados_investimentos = ttk.Treeview(tabview.tab('Histórico de Transações'), columns=['column1', 'column2', 'column3', 'column4', 'column5', 'column6', 'column7'], show='headings')
-tabela_dados_investimentos.column('column1', width=60, minwidth=60, stretch=False)
+tabela_dados_investimentos.column('column1', width=60, minwidth=40, stretch=False)
 tabela_dados_investimentos.heading('#1', text='Moeda', anchor='center')
-tabela_dados_investimentos.column('column2', width=90, minwidth=50, stretch=False)
+tabela_dados_investimentos.column('column2', width=80, minwidth=50, stretch=False)
 tabela_dados_investimentos.heading('#2', text='Transação', anchor='center')
 tabela_dados_investimentos.column('column3', width=75, minwidth=50, stretch=False)
 tabela_dados_investimentos.heading('#3', text='Data', anchor='center')
 tabela_dados_investimentos.column('column4', width=90, minwidth=50, stretch=False)
 tabela_dados_investimentos.heading('#4', text='Cotação')
-tabela_dados_investimentos.column('column5', width=120, minwidth=50, stretch=False)
+tabela_dados_investimentos.column('column5', width=100, minwidth=50, stretch=False)
 tabela_dados_investimentos.heading('#5', text='Valor Comprado')
 tabela_dados_investimentos.column('column6', width=130, minwidth=50, stretch=False)
 tabela_dados_investimentos.heading('#6', text='Total Comprado')
-tabela_dados_investimentos.column('column7', width=120, minwidth=50, stretch=False)
+tabela_dados_investimentos.column('column7', width=110, minwidth=50, stretch=False)
 tabela_dados_investimentos.heading('#7', text='Cotação Atual')
 tabela_dados_investimentos.pack()
 
 tabela_carteira_atual = ttk.Treeview(tabview.tab('Carteira Atual'), columns=['column1', 'column2', 'column3', 'column4', 'column5', 'column6', 'column7'], show='headings')
 tabela_carteira_atual.column('column1', width=60, minwidth=60, stretch=False)
 tabela_carteira_atual.heading('#1', text='Cripto', anchor='center')
-tabela_carteira_atual.column('column2', width=90, minwidth=50, stretch=False)
+tabela_carteira_atual.column('column2', width=110, minwidth=50, stretch=False)
 tabela_carteira_atual.heading('#2', text='Quant. Total', anchor='center')
-tabela_carteira_atual.column('column3', width=75, minwidth=50, stretch=False)
-tabela_carteira_atual.heading('#3', text='Custo Médio', anchor='center')
-tabela_carteira_atual.column('column4', width=90, minwidth=50, stretch=False)
-tabela_carteira_atual.heading('#4', text='Cotação Atual')
-tabela_carteira_atual.column('column5', width=120, minwidth=50, stretch=False)
-tabela_carteira_atual.heading('#5', text='Valor Atual Total')
-tabela_carteira_atual.column('column6', width=130, minwidth=50, stretch=False)
-tabela_carteira_atual.heading('#6', text='Lucro/Prejuízo')
-tabela_carteira_atual.column('column7', width=120, minwidth=50, stretch=False)
-tabela_carteira_atual.heading('#7', text='% Lucro/Prejuízo')
+tabela_carteira_atual.column('column3', width=110, minwidth=50, stretch=False)
+tabela_carteira_atual.heading('#3', text='Cotação Atual', anchor='center')
+tabela_carteira_atual.column('column4', width=100, minwidth=50, stretch=False)
+tabela_carteira_atual.heading('#4', text='Total Invest.')
+tabela_carteira_atual.column('column5', width=100, minwidth=50, stretch=False)
+tabela_carteira_atual.heading('#5', text='Total Atual')
+tabela_carteira_atual.column('column6', width=80, minwidth=50, stretch=False)
+tabela_carteira_atual.heading('#6', text='Lucr/Prej')
+tabela_carteira_atual.column('column7', width=60, minwidth=50, stretch=False)
+tabela_carteira_atual.heading('#7', text='%L/P')
 tabela_carteira_atual.pack()
 
 botao_deletar = tk.CTkButton(janela, hover=True, text='Deletar', command=lambda: deletar_dados(tabela_dados_investimentos))
@@ -250,6 +306,7 @@ botao_atualizar_tabela.grid(column=1, row=8, pady=(0, 20), sticky='ew')
 
 # Chamadas iniciais para exibir os dados
 atualizar_tabela()
+atualizar_carteira()
 exibir_soma_investimentos()
 exibir_total_lucro()
 
