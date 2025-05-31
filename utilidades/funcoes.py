@@ -123,9 +123,9 @@ def ler_arquivo_investimentos():
     return arquivo
 
 
-def adicionar_investimento_no_arquivo(moeda, dataTransacao, cotacao, valorComprado, totalComprado, transacao='compra', posicao='len(arquivo)'):
+def adicionar_investimento_no_arquivo(moeda, dataTransacao, cotacao, valor, total, transacao='compra', posicao='len(arquivo)'):
     arquivo = ler_arquivo_investimentos()
-    novaLinha = [moeda, transacao, dataTransacao, cotacao, valorComprado, totalComprado]
+    novaLinha = [moeda, transacao, dataTransacao, cotacao, valor, total]
     
     novaLinha[2] = pd.to_datetime(novaLinha[2], errors='coerce')
     
