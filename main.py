@@ -6,7 +6,7 @@ from utilidades.funcoes import *
 from utilidades.registro_compra import *
 
 
-def atualizar_dados_em_thread(popup, progress_bar):
+def atualizar_dados_em_thread(popup, progress_bar, tabelaCarteira):
     """
     Função executada em uma thread separada para atualizar os dados.
 
@@ -29,7 +29,7 @@ def atualizar_dados_em_thread(popup, progress_bar):
         elif i == 1:
             print('Atualizando carteira...')
             try:
-                atualizar_carteira()
+                atualizar_carteira(tabelaCarteira)
                 print('Carteira atualizada.')
             except Exception as e:
                 print(f"Erro ao atualizar carteira: {e}")
@@ -73,7 +73,7 @@ def mostrar_erro(parent, mensagem):
     tk.CTkButton(erro_popup, text="OK", command=erro_popup.destroy).pack(padx=20, pady=10)
 
 
-def atualizar_todos_dados():
+def atualizar_todos_dados(tabelaCarteira):
     """
     Função chamada ao clicar no botão de atualizar.
     Cria a popup de progresso e inicia a thread de atualização.
@@ -88,7 +88,7 @@ def atualizar_todos_dados():
     progress_bar.pack(padx=20, pady=10)
     progress_bar.set(0)
 
-    thread_atualizacao = threading.Thread(target=atualizar_dados_em_thread, args=(popup, progress_bar))
+    thread_atualizacao = threading.Thread(target=atualizar_dados_em_thread, args=(popup, progress_bar, tabelaCarteira))
     thread_atualizacao.start()
     botao_atualizar_tabela.configure(state="disabled")  # Desabilita o botão durante a atualização
     janela.after(10, verificar_thread_e_reabilitar_botao, thread_atualizacao)  # Inicia a verificação
@@ -114,15 +114,15 @@ def atualizar_tabela():
     try:
         tabelaInvestimentos = ler_arquivo_investimentos()
         
-        for item in tabela_dados_investimentos.get_children():
-            tabela_dados_investimentos.delete(item)
-        
         lista = []    
         for i, row in tabelaInvestimentos.iterrows():
             cotacaoAtual = float(cotar_moeda(row['moeda']))
             dataFormatada = row['data_transacao'].strftime('%d/%m/%Y') if pd.notnull(row['data_transacao']) else 'N/A'
             novaLinha = [row['moeda'], row['transacao'], dataFormatada, row['cotacao_na_data'], f'R$ {row['comprado']:.2f}', row['total_comprado'], cotacaoAtual]
             lista.append(novaLinha)
+            
+        for item in tabela_dados_investimentos.get_children():
+            tabela_dados_investimentos.delete(item)
             
         for item in lista:
             tabela_dados_investimentos.insert('', tkinter.END, values=item)
@@ -131,45 +131,17 @@ def atualizar_tabela():
         raise # Re-lança a exceção para ser tratada na thread
     
 
-def atualizar_carteira():
+def atualizar_carteira(tabelaCarteira):
     """
     Função para atualizar a tabela da carteira na interface.
     """
+    lista = listar_dados_carteira()
     try:
-        arquivo = ler_arquivo_investimentos()
-        
-        dadosCarteira = {
-            'cripto': [],
-            'quantidade': [],
-            'total_investido': []
-        }
-        for i, row in arquivo.iterrows():
-            if(row['moeda'] not in dadosCarteira['cripto']):
-                dadosCarteira['cripto'].append(row['moeda'])
-                dadosCarteira['quantidade'].append(row['total_comprado'])
-                dadosCarteira['total_investido'].append(row['comprado'])
-            else:
-                dadosCarteira['quantidade'][dadosCarteira['cripto'].index(row['moeda'])] += row['total_comprado']
-                dadosCarteira['total_investido'][dadosCarteira['cripto'].index(row['moeda'])] += row['comprado']
-        
-        lista = []
-        for i in range(0, len(dadosCarteira['cripto'])):
-            cripto = dadosCarteira['cripto'][i]
-            qtd_total = dadosCarteira['quantidade'][i]
-            total_investido = dadosCarteira['total_investido'][i]
-            cotacao_atual = cotar_moeda(dadosCarteira['cripto'][i])
-            valor_atual_total = float(qtd_total) * float(cotacao_atual)
-            lucro_prejuizo = valor_atual_total - total_investido
-            porcentagem_lucro_prejuizo = (lucro_prejuizo / total_investido) * 100
-            
-            nova_linha = [cripto, qtd_total, cotacao_atual, f'R$ {total_investido:.2f}', f'R$ {valor_atual_total:.2f}', f'R$ {lucro_prejuizo:.2f}', f'{porcentagem_lucro_prejuizo:.2f}%']
-            lista.append(nova_linha)
-        
-        for item in tabela_carteira_atual.get_children():
-            tabela_carteira_atual.delete(item)
+        for item in tabelaCarteira.get_children():
+            tabelaCarteira.delete(item)
             
         for item in lista:
-            tabela_carteira_atual.insert('', tkinter.END, values=item)
+            tabelaCarteira.insert('', tkinter.END, values=item)
     except Exception as e:
         print(f'Erro ao atualizar a carteira: {e}')
         raise # Re-lança a exceção para ser tratada na thread
@@ -281,10 +253,10 @@ botao_deletar = tk.CTkButton(janela, hover=True, text='Deletar', command=lambda:
 frame_total_investido = tk.CTkFrame(janela)
 label_total_investido = tk.CTkLabel(frame_total_investido)
 frame_lucro_prejuizo = tk.CTkFrame(janela)
-label_lucro_prejuizo = tk.CTkLabel(frame_lucro_prejuizo, text='Lucro/Prejuízo Total')
+label_lucro_prejuizo = tk.CTkLabel(frame_lucro_prejuizo, text='Lucro/Prejuízo Atual')
 valor_lucro_prejuizo = tk.CTkLabel(frame_lucro_prejuizo)
 botao_atualizar_tabela = tk.CTkButton(janela, height=50, border_width=2, hover=True, text='Atualizar Tabela',
-                                     command=atualizar_todos_dados)
+                                     command=lambda: atualizar_todos_dados(tabela_carteira_atual))
 
 # Posicionar na janela
 titulo.grid(row=0, column=0, padx=20, pady=20, sticky="ew", columnspan=3)
@@ -306,7 +278,7 @@ botao_atualizar_tabela.grid(column=1, row=8, pady=(0, 20), sticky='ew')
 
 # Chamadas iniciais para exibir os dados
 atualizar_tabela()
-atualizar_carteira()
+atualizar_carteira(tabela_carteira_atual)
 exibir_soma_investimentos()
 exibir_total_lucro()
 

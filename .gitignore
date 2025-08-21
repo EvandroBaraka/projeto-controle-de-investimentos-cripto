@@ -1,2 +1,25 @@
 teste*
 backup_main.py
+
+# Arquivos de ambiente virtual
+.venv/
+venv/
+env/
+*venv*/
+
+# Arquivos gerados pelo PyInstaller
+dist/
+build/
+*.spec
+
+# Pastas e arquivos do Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Arquivos de editor de código (VS Code, etc.)
+.vscode/
+.idea/
+.project
+.DS_Store # Arquivos de metadados do macOS

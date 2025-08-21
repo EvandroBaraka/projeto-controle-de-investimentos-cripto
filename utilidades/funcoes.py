@@ -1,5 +1,7 @@
 import pandas as pd
 import requests
+from requests.exceptions import RequestException, ConnectionError, SSLError
+import time
 import os
 import tkinter
 from tkinter import messagebox
@@ -7,20 +9,42 @@ from tkinter import messagebox
 
 def nomes_moedas():
     url = "https://api.binance.com/api/v3/exchangeInfo"
-    resposta = requests.get(url)
-    data = resposta.json()
-    pares_brl = []
-    lista_criptos = []
+    retries = 2 # Número de tentativas
+    delay = 5 # Tempo de espera entre as tentativas (em segundos)
+    
+    for i in range(retries):
+        try:
+            resposta = requests.get(url, timeout=10) # Adiciona um timeout
+            resposta.raise_for_status() # Lança um erro para códigos de status HTTP ruins
+            
+            data = resposta.json()
+            pares_brl = []
+            lista_criptos = []
 
-    #Percorre cada par de criptomoedas retornado pela API
-    for symbol in data['symbols']:
-        if 'BRL' in symbol['symbol']:
-            pares_brl.append(symbol['symbol'])
-    #remove BRL dos pares para exibir        
-    for c in pares_brl:
-        lista_criptos.append(c[:c.find('BRL')])
-    lista_criptos.insert(0, 'Selecione a moeda')
-    return lista_criptos
+            #Percorre cada par de criptomoedas retornado pela API
+            for symbol in data['symbols']:
+                if 'BRL' in symbol['symbol']:
+                    pares_brl.append(symbol['symbol'])
+            #remove BRL dos pares para exibir        
+            for c in pares_brl:
+                lista_criptos.append(c[:c.find('BRL')])
+            lista_criptos.insert(0, 'Selecione a moeda')
+            return lista_criptos
+        except (RequestException, ConnectionError, SSLError) as e:
+            # Captura erros de requisição, conexão e SSL
+            print(f"Erro na tentativa {i+1} de conectar à API: {e}")
+            if i < retries - 1:
+                print(f"Tentando novamente em {delay} segundos...")
+                time.sleep(delay)
+            else:
+                print("Todas as tentativas falharam. Verifique sua conexão ou firewall.")
+                return [] # Retorna uma lista vazia para evitar quebra do programa
+        except Exception as e:
+            # Captura outros erros inesperados
+            print(f"Ocorreu um erro inesperado: {e}")
+            return [] # Retorna uma lista vazia para evitar quebra do programa
+            
+    return []
     
 
 def formatar_cotacao(moeda_selecionada):
@@ -35,15 +59,31 @@ def cotar_moeda(moeda):
     if not moeda == 'Selecione a moeda':
         # Endpoint público da Binance para consultar o preço de um par de criptomoedas
         url = f"https://api.binance.com/api/v3/ticker/price?symbol={moeda}BRL"
-
-        response = requests.get(url)
-        preco = response.json()
+        retries = 2
+        delay = 5
         
-        return preco['price']
+        for i in range(retries):
+            try:
+                response = requests.get(url, timeout=10)
+                response.raise_for_status()
+                preco = response.json()
+                return preco['price']
+            
+            except (RequestException, ConnectionError, SSLError) as e:
+                print(f"Erro na tentativa {i+1} de cotar {moeda}: {e}")
+                if i < retries - 1:
+                    print(f"Tentando novamente em {delay} segundos...")
+                    time.sleep(delay)
+                else:
+                    print(f"Todas as tentativas de cotar {moeda} falharam. Verifique sua conexão ou firewall.")
+                    return 0.0
+                
+            except Exception as e:
+                print(f"Ocorreu um erro inesperado ao cotar {moeda}: {e}")
+                return 0.0
+    
     else:
-        preco = 0
-
-        return preco
+        return 0.0
 
 
 def obter_cotacao_historica(moeda_cotada, data, intervalo='1d', moeda_base='BRL'):
@@ -123,6 +163,56 @@ def ler_arquivo_investimentos():
     return arquivo
 
 
+def listar_dados_carteira():
+    """
+    Função que busca os dados no arquivo de investimentos e transforma em uma lista com os dados de carteira atual
+
+    Returns:
+        list: lista com as colunas moeda, quantidade total, cotação atual, total investido, valor atual total, lucro/prejuizo, % lucro/preejuizo
+    """
+    try:
+        arquivo = ler_arquivo_investimentos()
+        
+        dadosCarteira = {
+            'cripto': [],
+            'quantidade': [],
+            'total_investido': []
+        }
+        for i, row in arquivo.iterrows():
+            if(row['moeda'] not in dadosCarteira['cripto']):
+                dadosCarteira['cripto'].append(row['moeda'])
+                dadosCarteira['quantidade'].append(row['total_comprado'])
+                dadosCarteira['total_investido'].append(row['comprado'])
+            else:
+                if(row['transacao'] == 'compra'):
+                    dadosCarteira['quantidade'][dadosCarteira['cripto'].index(row['moeda'])] += row['total_comprado']
+                    dadosCarteira['total_investido'][dadosCarteira['cripto'].index(row['moeda'])] += row['comprado']
+                    
+                elif(row['transacao'] == 'venda'):
+                    dadosCarteira['quantidade'][dadosCarteira['cripto'].index(row['moeda'])] -= row['total_comprado']
+                    dadosCarteira['total_investido'][dadosCarteira['cripto'].index(row['moeda'])] -= row['comprado']
+        
+        lista = []
+        for i in range(0, len(dadosCarteira['cripto'])):
+            if(dadosCarteira['quantidade'][i] > 0):
+                cripto = dadosCarteira['cripto'][i]
+                qtd_total = dadosCarteira['quantidade'][i]
+                total_investido = dadosCarteira['total_investido'][i]
+                cotacao_atual = cotar_moeda(dadosCarteira['cripto'][i])
+                valor_atual_total = float(qtd_total) * float(cotacao_atual)
+                lucro_prejuizo = valor_atual_total - total_investido
+                porcentagem_lucro_prejuizo = (lucro_prejuizo / total_investido) * 100
+                
+                nova_linha = [cripto, qtd_total, cotacao_atual, f'R$ {total_investido:.2f}', f'R$ {valor_atual_total:.2f}', f'R$ {lucro_prejuizo:.2f}', f'{porcentagem_lucro_prejuizo:.2f}%']
+                lista.append(nova_linha)
+                
+        return lista
+    
+    except Exception as e:
+        print(f'Erro ao trazer dados da carteira: {e}')
+        raise
+        
+        
 def adicionar_investimento_no_arquivo(moeda, dataTransacao, cotacao, valor, total, transacao='compra', posicao='len(arquivo)'):
     arquivo = ler_arquivo_investimentos()
     novaLinha = [moeda, transacao, dataTransacao, cotacao, valor, total]
@@ -139,7 +229,11 @@ def somar_investimentos():
     arquivo = ler_arquivo_investimentos()
     soma = 0
     for i, row in arquivo.iterrows():
-        soma+= float(row['comprado'])
+        if(row['transacao'] == 'compra'):
+            soma += float(row['comprado'])
+            
+        elif(row['transacao'] == 'venda'):
+            soma -= float(row['comprado'])
         
     return soma
 
@@ -149,7 +243,10 @@ def total_lucro_atual():
     total = 0
     for i, row in arquivo.iterrows():
         cotacao = float(cotar_moeda(row['moeda']))
-        total += row['total_comprado'] * cotacao
+        if(row['transacao'] == 'compra'):
+            total += row['total_comprado'] * cotacao
+        elif(row['transacao'] == 'venda'):
+            total -= row['total_comprado'] * cotacao
     
     return total
 

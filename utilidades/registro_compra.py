@@ -92,8 +92,10 @@ def abrir_janela_registro_compra(janela_pai, moeda_selecionada='Selecione a moed
         
         resposta = messagebox.askokcancel(title='Confirmar Registro', message=f'Confirme os dados e pressione OK:\n{strDadosCompra}')
         
-        if(resposta):
+        if(resposta and transacao == 'compra'):
             registrar_compra(transacao, moeda, data, cotacao, valor, total)
+        elif(resposta and transacao == 'venda'):
+            registrar_compra(transacao, moeda, data, cotacao, valor=total, total=valor)
         
     
     janelaRegistroCompra = tk.CTkToplevel(janela_pai)
@@ -111,7 +113,12 @@ def abrir_janela_registro_compra(janela_pai, moeda_selecionada='Selecione a moed
     else:
         cotacao = 0
     lista_criptos = nomes_moedas()
+    lista_criptos_na_carteira = listar_dados_carteira()
+    nomes_criptos_na_carteira = []
+    for item in lista_criptos_na_carteira:
+        nomes_criptos_na_carteira.append(item[0])
     
+        
     # Campos da tela de Compra
     label_moeda = tk.CTkLabel(tabview.tab('Compra'), font=('', 18), text='Moeda Comprada')
     campo_select_moeda = tk.CTkOptionMenu(tabview.tab('Compra'), width=200, font=('', 16), values=lista_criptos, command=lambda moeda: on_nova_cripto_selecionada('compra', moeda, campo_cotacao, campo_valor_comprado, campo_total_comprado))
@@ -141,12 +148,12 @@ def abrir_janela_registro_compra(janela_pai, moeda_selecionada='Selecione a moed
                                         moeda=campo_select_moeda.get(), 
                                         data=campo_data.get_date(), 
                                         cotacao=campo_cotacao.get(), 
-                                        valor=campo_valor_comprado.get(), 
+                                        valor=campo_valor_comprado.get().replace(',', '.'), 
                                         total=campo_total_comprado.get()))
     
     # Campos da tela de venda
-    label_cripto = tk.CTkLabel(tabview.tab('Venda'), font=('', 18), text='Cripto')
-    campo_select_cripto = tk.CTkOptionMenu(tabview.tab('Venda'), width=200, font=('', 16), values=lista_criptos, command=lambda moeda: on_nova_cripto_selecionada('venda', moeda, campo_cotacao_venda, campo_valor_vendido, campo_total_vendido))
+    label_cripto = tk.CTkLabel(tabview.tab('Venda'), font=('', 18), text='Criptos Disponíveis')
+    campo_select_cripto = tk.CTkOptionMenu(tabview.tab('Venda'), width=200, font=('', 16), values=nomes_criptos_na_carteira, command=lambda moeda: on_nova_cripto_selecionada('venda', moeda, campo_cotacao_venda, campo_valor_vendido, campo_total_vendido))
     campo_select_cripto.set(moeda_selecionada)
     
     label_data_venda = tk.CTkLabel(tabview.tab('Venda'), font=('', 18), text='Data da Venda')
@@ -173,7 +180,7 @@ def abrir_janela_registro_compra(janela_pai, moeda_selecionada='Selecione a moed
                                         moeda=campo_select_cripto.get(),
                                         data=campo_data_venda.get_date(),
                                         cotacao=campo_cotacao_venda.get(),
-                                        valor=campo_valor_vendido.get(),
+                                        valor=campo_valor_vendido.get().replace(',','.'),
                                         total=campo_total_vendido.get()))
     
     tabview.pack()
