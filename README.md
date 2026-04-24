@@ -88,8 +88,8 @@ python main.py
 
 👨‍💻 **Evandro Passaia**  
 - GitHub: [@EvandroBaraka](https://github.com/EvandroBaraka)  
-- LinkedIn: [Evandro Passaia](https://www.linkedin.com/in/evandro-passaia)  
-- Facebook: [Evandro Passaia](https://www.facebook.com/evandro.passaia)  
+- LinkedIn: [Evandro Passaia](https://www.linkedin.com/in/evandro-passaia-62b9a5269/)  
+- Facebook: [Evandro Passaia](https://www.facebook.com/evandro.passaiaze/)  
 
 ---
 📜 Licença: Este projeto está sob a licença [MIT](LICENSE).  
