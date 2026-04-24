@@ -167,6 +167,8 @@ def exibir_total_lucro():
         soma_investido = somar_investimentos()
         soma_atual = total_lucro_atual()
         total = soma_atual - soma_investido
+        
+        label_total_carteira_atual.configure(text=f'Total na carteira atual\nR$ {soma_atual:.2f}')
 
         if total > 0:
             valor_lucro_prejuizo.configure(text_color='green', font=('', 18), text=f'R$ {total:.2f}')
@@ -252,6 +254,8 @@ botao_deletar = tk.CTkButton(janela, hover=True, text='Deletar', command=lambda:
 
 frame_total_investido = tk.CTkFrame(janela)
 label_total_investido = tk.CTkLabel(frame_total_investido)
+frame_total_carteira_atual = tk.CTkFrame(janela)
+label_total_carteira_atual = tk.CTkLabel(frame_total_carteira_atual)
 frame_lucro_prejuizo = tk.CTkFrame(janela)
 label_lucro_prejuizo = tk.CTkLabel(frame_lucro_prejuizo, text='Lucro/Prejuízo Atual')
 valor_lucro_prejuizo = tk.CTkLabel(frame_lucro_prejuizo)
@@ -269,6 +273,8 @@ campo_compra.grid(column=0, row=5, pady=(0, 10), padx=20, sticky='w', columnspan
 botao_registrar.grid(column=2, row=4, pady=(0, 10), padx=20, sticky='sew', rowspan=2, columnspan=2)
 tabview.grid(column=0, row=6, pady=20, padx=10, columnspan=3)
 botao_deletar.grid(column=1, row=7, pady=(0, 20))
+frame_total_carteira_atual.grid(column=0, row=7, pady=(0, 20), padx=20, sticky='w')
+label_total_carteira_atual.pack(pady=10, padx=40)
 frame_total_investido.grid(column=0, row=8, pady=(0, 20), padx=20, sticky='w')
 label_total_investido.pack(pady=10, padx=40)
 frame_lucro_prejuizo.grid(column=2, row=8, pady=(0, 20), padx=20)
